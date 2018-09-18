@@ -10,6 +10,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Scanner;
 import java.util.Stack;
 
 import com.SevenDegrees.dataModels.Actor;
@@ -17,28 +18,47 @@ import com.SevenDegrees.dataModels.Movie;
 
 public class IMDBCrawler 
 {
-	private final String SEARCH_URL = "https://www.imdb.com/find?ref_=nv_sr_fn&q=";
-	private final String SEARCH_SUFFIX = "&s=all";
-	
+	//The base IMDB Url.
 	private final String IMDB_URL = "https://www.imdb.com";
 	
-
-	private final String nameAndLinkFinder = "result_text";
-	private final String linkFinder = "href=\"";
+	//The URL to do an IMDB search.
+	//The format is SEARCH_URL, then the name or movie to search for, with spaces replaced with +'s, and then the SEARCH_SUFFIX at the end.
+	private final String SEARCH_URL = IMDB_URL + "/find?ref_=nv_sr_fn&q=";
+	private final String SEARCH_SUFFIX = "&s=all";
 	
-	private final String movieFinder = "filmo-row";
+	//IDENTIFIERS
+	private final String NAME_AND_LINK_IDENTIFIER = "result_text";
+	private final String LINK_IDENTIFIER = "href=\"";
+	private final String MOVIE_IDENTIFIER = "filmo-row";
 	
-	private final int MAX_MOVIE_COUNT = 70;
+	//SEARCH SETTINGS.
+	//The max amount of movie included from a single actor. (In order of their most recent movies).
+	private final int MAX_MOVIE_COUNT = 100;
 	
+	//The max amount of actors used from a single movie (In order of their default IMDB appearance)
 	private final int MAX_ACTORS_PER_MOVIE = 20;
 	
-	private final String actorFrom = "Lindsay Lohan";
-	private final String actorTo = "Chris Pratt";
+	//This decides whether the crawler will just find a single match and stop, or keep printing.
+	private final boolean STOP_ON_FIRST_MATCH = false;
 	
 	public IMDBCrawler()
 	{
-		Actor startingActor = getActor(actorFrom);
-		Actor endingActor = getActor(actorTo);
+		//Gets the actors names from console.
+		Scanner keyboard = new Scanner(System.in);
+		System.out.print("Enter the starting Actor/Actress name: ");
+		String startingActor = keyboard.nextLine();
+		System.out.print("Enter the ending Actor/Actress name: ");
+		String endingActor = keyboard.nextLine();
+		
+		beginSearch(startingActor, endingActor);
+		keyboard.close();
+	}
+	
+	private void beginSearch(String startingActorName, String endingActorName)
+	{
+		System.out.println("Searching from '" + startingActorName + "' to '" + endingActorName + "'");
+		Actor startingActor = getActor(startingActorName);
+		Actor endingActor = getActor(endingActorName);
 		List<Movie> fromActorsMovies = startingActor.getMovies();
 		List<Movie> toActorsMovies = endingActor.getMovies();
 		
@@ -48,8 +68,8 @@ public class IMDBCrawler
 			{
 				if(fromMovie.getMovieName().equals(toMovie.getMovieName()))
 				{
-					System.out.println(actorFrom + " was in " + fromMovie.getMovieName() + " with " + actorTo);
-					return;
+					System.out.println(startingActor.getActorName() + " was in " + fromMovie.getMovieName() + " with " + endingActor.getActorName());
+ 
 				}
 			}
 		}
@@ -72,7 +92,11 @@ public class IMDBCrawler
 						{
 							//Now we need to re-find the movie shared between fromActor and middleman actor.
 							Movie movieShared = getSharedMovie(startingActor, actorFromMovie);
-							System.out.println(actorFrom + " was in " + movieShared.getMovieName() + " with " + actorFromMovie.getActorName() + " who was in " + movieActorHasBeenIn.getMovieName() + " with " + actorTo);
+							System.out.println(startingActor.getActorName() + " was in " + movieShared.getMovieName() + " with " + actorFromMovie.getActorName() + " who was in " + movieActorHasBeenIn.getMovieName() + " with " + endingActor.getActorName());
+							if(STOP_ON_FIRST_MATCH)
+							{
+								return;
+							}
 						}
 					}
 				}
@@ -81,7 +105,7 @@ public class IMDBCrawler
 		System.out.println("Actor compilation for second step is complete.");
 	}
 	
-	public Movie getSharedMovie(Actor actor1, Actor actor2)
+	private Movie getSharedMovie(Actor actor1, Actor actor2)
 	{
 		for(Movie movie1 : actor1.getMovies())
 		{
@@ -101,12 +125,12 @@ public class IMDBCrawler
 	 * @param actorName - The actors full name, first and last name.
 	 * @return - The actor object.
 	 */
-	public Actor getActor(String actorName)
+	private Actor getActor(String actorName)
 	{
 		//Searches for an actor and gets their webpage.
 		String webpage = getWebPage(SEARCH_URL + actorName.toLowerCase().replace(' ', '+') + SEARCH_SUFFIX);
-		int profileInfoLink = webpage.indexOf(nameAndLinkFinder);
-		int profileLinkIndex = webpage.indexOf(linkFinder, profileInfoLink) + linkFinder.length();
+		int profileInfoLink = webpage.indexOf(NAME_AND_LINK_IDENTIFIER);
+		int profileLinkIndex = webpage.indexOf(LINK_IDENTIFIER, profileInfoLink) + LINK_IDENTIFIER.length();
 		String profileLink = IMDB_URL + webpage.substring(profileLinkIndex, webpage.indexOf("\"", profileLinkIndex));
 		
 
@@ -127,7 +151,7 @@ public class IMDBCrawler
 		int currentIndex = 0;
 		while(counter>0)
 		{
-			currentIndex = actorWebpage.indexOf(movieFinder, currentIndex);
+			currentIndex = actorWebpage.indexOf(MOVIE_IDENTIFIER, currentIndex);
 			if(currentIndex >= 0)
 			{
 				//Filters out non-acting credits.
@@ -139,7 +163,7 @@ public class IMDBCrawler
 				}
 				else
 				{
-					int indexForMovieLink = actorWebpage.indexOf(linkFinder, currentIndex) + linkFinder.length();
+					int indexForMovieLink = actorWebpage.indexOf(LINK_IDENTIFIER, currentIndex) + LINK_IDENTIFIER.length();
 		
 					//check if the movie or tv show is valid.
 					int startOfMovieProgress = actorWebpage.indexOf("class=\"", indexForMovieLink)+"class=\"".length();
@@ -199,7 +223,7 @@ public class IMDBCrawler
 			currentIndex = webpage.indexOf("primary_photo", currentIndex);
 			if(currentIndex != -1)
 			{
-				int startOfLink = webpage.indexOf(linkFinder,  currentIndex) + linkFinder.length();
+				int startOfLink = webpage.indexOf(LINK_IDENTIFIER,  currentIndex) + LINK_IDENTIFIER.length();
 				int endOfLink = webpage.indexOf(">", startOfLink)-1;
 				String link = IMDB_URL + (webpage.substring(startOfLink, endOfLink));
 				
