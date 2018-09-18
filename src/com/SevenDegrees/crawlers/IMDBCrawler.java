@@ -27,8 +27,11 @@ public class IMDBCrawler
 	private final String SEARCH_SUFFIX = "&s=all";
 	
 	//IDENTIFIERS
+	//Finds the name and link of a search result.
 	private final String NAME_AND_LINK_IDENTIFIER = "result_text";
+	//Used to find any links.
 	private final String LINK_IDENTIFIER = "href=\"";
+	//Used to find movies on an actor's page.
 	private final String MOVIE_IDENTIFIER = "filmo-row";
 	
 	//SEARCH SETTINGS.
@@ -40,6 +43,12 @@ public class IMDBCrawler
 	
 	//This decides whether the crawler will just find a single match and stop, or keep printing.
 	private final boolean STOP_ON_FIRST_MATCH = false;
+	
+	//This can make it less fun when turned on, as it includes shows that the actors may not have been in at the same time, such as sketch shows, or guest cameos.
+	private final boolean INCLUDE_TV_SHOWS = false;
+	
+	//This will filter out movies/tv shows that according to IMDB are still in production.
+	private final boolean INCLUDE_IN_PRODUCTION_CONTENT = false;
 	
 	public IMDBCrawler()
 	{
@@ -56,12 +65,13 @@ public class IMDBCrawler
 	
 	private void beginSearch(String startingActorName, String endingActorName)
 	{
-		System.out.println("Searching from '" + startingActorName + "' to '" + endingActorName + "'");
+		System.out.println("Searching from '" + startingActorName + "' to '" + endingActorName + "'.");
 		Actor startingActor = getActor(startingActorName);
 		Actor endingActor = getActor(endingActorName);
+		
+		//////////////////FIRST DEGREE CHECK
 		List<Movie> fromActorsMovies = startingActor.getMovies();
 		List<Movie> toActorsMovies = endingActor.getMovies();
-		
 		for(Movie fromMovie : fromActorsMovies)
 		{
 			for(Movie toMovie : toActorsMovies)
@@ -74,9 +84,12 @@ public class IMDBCrawler
 			}
 		}
 		System.out.println("These actors do NOT have a single step relationship.");
+		//////////////////END OF FIRST DEGREE CHECK
+		
 		
 		/* This is the beginning of the two step relationship.
 		 * It checks all of the actors that the fromActor has worked with, to see if they share a movie with the toActor.
+		 * For this to check everything, it should also check the other direction obviously, however it currently takes so long that it's not worth it.
 		 */
 		for(Movie fromMovie : fromActorsMovies)
 		{
@@ -102,9 +115,13 @@ public class IMDBCrawler
 				}
 			}
 		}
-		System.out.println("Actor compilation for second step is complete.");
+		System.out.println("Tried every option from FromActor's cast mates, to toActor.");
+		System.out.println("Finished.");
 	}
 	
+	/**
+	 * Returns a movie that is shared by both of the actors.
+	 */
 	private Movie getSharedMovie(Actor actor1, Actor actor2)
 	{
 		for(Movie movie1 : actor1.getMovies())
@@ -169,7 +186,7 @@ public class IMDBCrawler
 					int startOfMovieProgress = actorWebpage.indexOf("class=\"", indexForMovieLink)+"class=\"".length();
 					int endOfMovieProgress = actorWebpage.indexOf("\"", startOfMovieProgress);
 					String movieProgress = actorWebpage.substring(startOfMovieProgress, endOfMovieProgress);
-					if(movieProgress.equals("in_production") || movieProgress.equals("filmo-episodes"))
+					if((movieProgress.equals("in_production") && !INCLUDE_IN_PRODUCTION_CONTENT) || (movieProgress.equals("filmo-episodes") && !INCLUDE_TV_SHOWS))
 					{
 						//We have found a tv show, or an in-production movie/show, so bail.
 						currentIndex = indexForMovieLink;
