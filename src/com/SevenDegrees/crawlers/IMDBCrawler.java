@@ -17,8 +17,8 @@ import com.SevenDegrees.dataModels.Movie;
 
 public class IMDBCrawler 
 {
-	private final String searchURL = "https://www.imdb.com/find?ref_=nv_sr_fn&q=";
-	private final String searchSuffix = "&s=all";
+	private final String SEARCH_URL = "https://www.imdb.com/find?ref_=nv_sr_fn&q=";
+	private final String SEARCH_SUFFIX = "&s=all";
 	
 	private final String IMDB_URL = "https://www.imdb.com";
 	
@@ -104,7 +104,7 @@ public class IMDBCrawler
 	public Actor getActor(String actorName)
 	{
 		//Searches for an actor and gets their webpage.
-		String webpage = getWebPage(searchURL + actorName.toLowerCase().replace(' ', '+') + searchSuffix);
+		String webpage = getWebPage(SEARCH_URL + actorName.toLowerCase().replace(' ', '+') + SEARCH_SUFFIX);
 		int profileInfoLink = webpage.indexOf(nameAndLinkFinder);
 		int profileLinkIndex = webpage.indexOf(linkFinder, profileInfoLink) + linkFinder.length();
 		String profileLink = IMDB_URL + webpage.substring(profileLinkIndex, webpage.indexOf("\"", profileLinkIndex));
