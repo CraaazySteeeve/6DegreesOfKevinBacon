@@ -11,5 +11,6 @@ FUTURE TASKS:
 - Add timing logs to find timesinks and optimize them.
 - Add multithreading, to maximise search speed.
 - Rework the searching so it happens recursively (instead of writing each degree by hand) (This is not useful until it's MUCH faster though).
+- Also rework how the chain of actors is saved, right now it's re-calculated which is expensive.
 - Optimize the matching/searching somehow.
 - Make sure I am not breaking some sort of web ettiquite by using IMDB like this.
